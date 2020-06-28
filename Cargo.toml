@@ -1,6 +1,6 @@
 [package]
-name = "fslame"
-version = "0.1.0"
+name = "piecut"
+version = "1.0.0"
 authors = ["Daniel May <daniel.may@mailbox.org>"]
 edition = "2018"
 
