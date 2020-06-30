@@ -115,6 +115,7 @@ fn confirm_file_deletion(path: &path::Path) -> Result<bool, Box<dyn Error>>{
         println!("File deleted\n");
         return Ok(true)
     }
+    println!();
     Ok(false)
 }
 
@@ -130,7 +131,7 @@ fn create_current_data(files: &Vec<LameFile>, skip: usize,
                         .take(NUM_FILES_SHOWN)
                         .zip(deleted.iter())
                         .enumerate()
-                        .filter(|(_, (_, &d))| !d)
+                        .filter(|(_, (_, &d))| !d)      // remove already deleted entries
                         .map(|(i, (f, _))| (i, f)) {           
         data.push(Data {
             label: format!("({}) {}", i + 1, file),
@@ -171,6 +172,10 @@ fn process_input(files: &Vec<LameFile>, skip: &mut usize, total_size: &mut u64,
     
     match choice.as_str() {
         "N" => {
+            if *skip + NUM_FILES_SHOWN >= files.len() {
+                println!("\nNo files left, quitting.\n");
+                return Ok(true)
+            }
             *skip += NUM_FILES_SHOWN;
             *deleted = [false; NUM_FILES_SHOWN];
         },
@@ -180,21 +185,25 @@ fn process_input(files: &Vec<LameFile>, skip: &mut usize, total_size: &mut u64,
             match choice.parse::<usize>() {
                 Ok(n @ 1..=NUM_FILES_SHOWN) => {
                     let index = n - 1;
-                    let file = &files[*skip + index];
-                    // prompt for actual deletion
-                    match confirm_file_deletion(&file.path) {
-                        Ok(done) => {
-                            if done {
-                                deleted[index] = true;
-                                *total_size -= file.size;
-                            }
-                        },
-                        Err(_err) => eprintln!("Couldn't delete file")
-                    };
+                    if deleted[index] {
+                        eprintln!("Invalid choice\n");
+                    } else {
+                        let file = &files[*skip + index];
+                        // prompt for actual deletion
+                        match confirm_file_deletion(&file.path) {
+                            Ok(done) => {
+                                if done {
+                                    deleted[index] = true;
+                                    *total_size -= file.size;
+                                }
+                            },
+                            Err(_err) => eprintln!("Couldn't delete file\n")
+                        };
+                    }
                 },
                 // wrong number
-                Ok(_) => eprintln!("Invalid choice"),
-                Err(_err) => eprintln!("Not a valid number")
+                Ok(_) => eprintln!("Invalid choice\n"),
+                Err(_err) => eprintln!("Not a valid number\n")
             };
         }
     };
@@ -221,19 +230,23 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     while !quit {
         let data = create_current_data(&files, skip, total_size, &deleted);
+        if total_size <= 0 {
+            println!("No files left, quitting.\n");
+            quit = true;
+        } else {
+            Chart::new()
+                .radius(6)
+                .aspect_ratio(3)
+                .legend(true)
+                .draw(&data);
 
-        Chart::new()
-            .radius(6)
-            .aspect_ratio(3)
-            .legend(true)
-            .draw(&data);
+            println!("\nTop {0} filesizes are shown above. Enter a number to delete, \
+                type n to show the next {0} files or q to quit.", NUM_FILES_SHOWN);
+            print!("Input: ");
+            io::stdout().flush()?;
 
-        println!("\nTop {0} filesizes are shown above. Enter a number to delete, \
-            type n to show the next {0} files or q to quit.", NUM_FILES_SHOWN);
-        print!("Input: ");
-        io::stdout().flush()?;
-
-        quit = process_input(&files, &mut skip, &mut total_size, &mut deleted)?;
+            quit = process_input(&files, &mut skip, &mut total_size, &mut deleted)?;
+        }
     }
     Ok(())
 }
