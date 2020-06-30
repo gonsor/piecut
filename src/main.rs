@@ -83,8 +83,9 @@ fn get_lame_files(path: &str, min_created: u64, min_modified: u64, min_accessed:
         match entry {
             Ok(file) => {
                 let metadata = file.metadata()?;
-                let size = file.metadata()?.len();
-                if meets_time_condition(now, min_created, metadata.created()?)
+                let size = metadata.len();
+                if metadata.is_file() 
+                        && meets_time_condition(now, min_created, metadata.created()?)
                         && meets_time_condition(now, min_modified, metadata.modified()?)
                         && meets_time_condition(now, min_accessed, metadata.accessed()?) {
                     files.push(LameFile {

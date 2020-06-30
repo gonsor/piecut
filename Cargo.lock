@@ -51,15 +51,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fslame"
-version = "0.1.0"
-dependencies = [
- "clap",
- "piechart",
- "walkdir",
-]
-
-[[package]]
 name = "hermit-abi"
 version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -81,6 +72,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c9d9a22ce3eae32cd0bbef041b114f14fcbab404f25c84854c75386f48412917"
 dependencies = [
  "ansi_term 0.12.1",
+]
+
+[[package]]
+name = "piecut"
+version = "1.0.0"
+dependencies = [
+ "clap",
+ "piechart",
+ "walkdir",
 ]
 
 [[package]]
