@@ -1,15 +1,14 @@
 use std::{fmt, fs, time, io, io::Write, path, error::Error};
-use clap::{Arg, ArgMatches, App};
+use clap::{Arg, ArgMatches, App, AppSettings, crate_version, crate_name, crate_description};
 use walkdir::WalkDir;
 use piechart::{Chart, Color, Data};
 
 const SECONDS_PER_DAY: u64 = 86400;
-
 const NUM_FILES_SHOWN: usize = 5;
-
 const SIZE_CONVERT_VALUE: f64 = 1024.;
 const SIZE_CONVERT_SUFFIXES: [&str; 5] = ["Byte", "KiB", "MiB", "GiB", "TiB"];
 
+/// Files that are possible candidates for deletion.
 struct LameFile {
     size: u64,
     path: path::PathBuf,
@@ -22,6 +21,7 @@ impl fmt::Display for LameFile {
     }
 }
 
+/// Converts byte values to KiB, MiB, ...
 fn to_readable_size(size: u64) -> String {
     let base = (size.max(1) as f64).log(SIZE_CONVERT_VALUE);
     let floored = base.floor();
@@ -29,11 +29,12 @@ fn to_readable_size(size: u64) -> String {
     format!("{:.2} {}", result, SIZE_CONVERT_SUFFIXES[floored as usize])
 }
 
+/// Parses command line arguments.
 fn parse_args<'a>() -> ArgMatches<'a> {
-    App::new("Piecut")
-        .version("1.0")
-        .author("Daniel May")
-        .about("Find files sorted by size and clean them up")
+    App::new(crate_name!())
+        .version(crate_version!())
+        .setting(AppSettings::ColoredHelp)
+        .about(crate_description!())
         .arg(Arg::with_name("DIR")
             .help("Directory that contains the input files")
             .required(true)
@@ -59,6 +60,8 @@ fn parse_args<'a>() -> ArgMatches<'a> {
         .get_matches()
 }
 
+/// Checks if file metadata times (e.g last accessed) is not too
+/// far back in the past.
 fn meets_time_condition(now: time::SystemTime, min_value: u64,
         actual_value: time::SystemTime) -> bool {
     if min_value == 0 {
@@ -72,6 +75,8 @@ fn meets_time_condition(now: time::SystemTime, min_value: u64,
     false
 }
 
+/// Finds all files recursively within a directory. The files can be filtered by
+/// various criteria, e.g. last accessed date. See above.
 fn get_lame_files(path: &str, min_created: u64, min_modified: u64, min_accessed: u64)
         -> Result<(u64, Vec<LameFile>), Box<dyn Error>> {
 
@@ -105,6 +110,7 @@ fn get_lame_files(path: &str, min_created: u64, min_modified: u64, min_accessed:
     Ok((total_size, files))
 }
 
+/// Prompts for file deletion.
 fn confirm_file_deletion(path: &path::Path) -> Result<bool, Box<dyn Error>>{
     let mut choice = String::new();
     print!("Delete file {}? y/N: ", path.to_str().unwrap());
@@ -119,6 +125,7 @@ fn confirm_file_deletion(path: &path::Path) -> Result<bool, Box<dyn Error>>{
     Ok(false)
 }
 
+/// Creates Piechart data for current pile slices.
 fn create_current_data(files: &Vec<LameFile>, skip: usize,
         total_size: u64, deleted: &[bool; NUM_FILES_SHOWN]) -> Vec<Data> {    
 
@@ -153,6 +160,7 @@ fn create_current_data(files: &Vec<LameFile>, skip: usize,
     data
 }
 
+/// Parses numeric command line conditions.
 fn parse_time_condition(matches: &ArgMatches, name: &str)
         -> Result<u64, Box<dyn Error>> {
     let val = matches.value_of(name).unwrap_or("0").parse::<u64>()?;
@@ -163,6 +171,8 @@ fn parse_time_condition(matches: &ArgMatches, name: &str)
     Ok(val)
 }
 
+/// Prompts for user input. The user can delete files, look for more files
+/// and abort the application.
 fn process_input(files: &Vec<LameFile>, skip: &mut usize, total_size: &mut u64,
         deleted: &mut [bool; NUM_FILES_SHOWN]) -> Result<bool, Box<dyn Error>> {
 
