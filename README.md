@@ -1,2 +1,6 @@
 # piecut
-Visualizes and cleans your filesystem from the terminal
+Get a clear and beautiful representation of the files that take up most of your space. Delete them interactively and move on to the next pie.
+
+![File Pie](screenshot.png)
+
+There are also various options to only include files with a certain age.

@@ -2,7 +2,7 @@
 name = "piecut"
 version = "1.0.0"
 authors = ["Daniel May <daniel.may@mailbox.org>"]
-description = "Find files sorted by size and clean them up."
+description = "Interactively delete files that take up most of your disk space."
 license = "MIT"
 edition = "2018"
 
